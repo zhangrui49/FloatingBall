@@ -60,7 +60,7 @@ public class FloatingBallService extends AccessibilityService {
             params.y = screenHeight / 2;
             params.width = WindowManager.LayoutParams.WRAP_CONTENT;
             params.height = WindowManager.LayoutParams.WRAP_CONTENT;
-            params.gravity = Gravity.LEFT | Gravity.TOP;
+            params.gravity = Gravity.START | Gravity.TOP;
             params.type = WindowManager.LayoutParams.TYPE_PHONE;
             params.format = PixelFormat.RGBA_8888;
             params.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
