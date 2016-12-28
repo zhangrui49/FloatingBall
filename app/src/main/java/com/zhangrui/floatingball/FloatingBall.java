@@ -8,9 +8,12 @@ import android.graphics.Paint;
 import android.os.Vibrator;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.Log;
+import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.WindowManager;
 
 /**
  * DESC:
@@ -38,6 +41,9 @@ public class FloatingBall extends View {
 
     private AccessibilityService mAccessibilityService;
     private Vibrator mVibrator;
+    private WindowManager mWindowManager;
+    private WindowManager.LayoutParams mLayoutParams;
+
     public void setOnFloatEvent(FloatingBall.OnFloatEvent onFloatEvent) {
         OnFloatEvent = onFloatEvent;
     }
@@ -61,7 +67,10 @@ public class FloatingBall extends View {
         mode = MODE.COMMON;
         mPaint = new Paint();
         mAccessibilityService = (AccessibilityService) context;
-        mVibrator=(Vibrator)context.getSystemService(Context.VIBRATOR_SERVICE);
+        mVibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+        mWindowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        mLayoutParams = new WindowManager.LayoutParams();
+        setAlpha();
     }
 
     @Override
@@ -72,9 +81,13 @@ public class FloatingBall extends View {
                 if (!isLongTouch() && isTouchSlop(event)) {
                     return true;
                 }
-                if (isLongTouch() && (mode == MODE.COMMON || mode == MODE.MOVE)) {
-
+                if (mIsLongTouch && (mode == MODE.COMMON || mode == MODE.MOVE)) {
+                    mLayoutParams=(WindowManager.LayoutParams)getLayoutParams();
+                    mLayoutParams.x = (int) (event.getRawX() - dip2px(25));
+                    mLayoutParams.y = (int) (event.getRawY() - dip2px(25)-46);
+                    mWindowManager.updateViewLayout(FloatingBall.this, mLayoutParams);
                     mode = MODE.MOVE;
+                    Log.e("xy","x:"+mLayoutParams.x+" "+"Y:"+mLastDownY);
                 } else {
                     checkEvent(event);
                 }
@@ -93,12 +106,13 @@ public class FloatingBall extends View {
             case MotionEvent.ACTION_UP:
 
                 isTouching = false;
+                mIsLongTouch=false;
                 init();
                 if (isLongTouch()) {
                     mIsLongTouch = false;
                 } else if (isClick(event)) {
                     if (OnFloatEvent == null) {
-                        Actions.doBack(mAccessibilityService);
+                        back();
                     } else {
                         OnFloatEvent.onClick();
                     }
@@ -109,7 +123,7 @@ public class FloatingBall extends View {
                 mode = MODE.COMMON;
                 break;
             case MotionEvent.ACTION_CANCEL:
-
+                mIsLongTouch=false;
                 isTouching = false;
                 init();
 
@@ -170,7 +184,7 @@ public class FloatingBall extends View {
                 break;
             case RIGHT:
                 if (OnFloatEvent == null) {
-                    Actions.doLeftOrRight(mAccessibilityService);
+                    right();
                 } else {
                     OnFloatEvent.onRignt();
                 }
@@ -178,7 +192,7 @@ public class FloatingBall extends View {
                 break;
             case DOWN:
                 if (OnFloatEvent == null) {
-                    Actions.doPullDown(mAccessibilityService);
+                    down();
                 } else {
                     OnFloatEvent.onDown();
                 }
@@ -186,7 +200,7 @@ public class FloatingBall extends View {
                 break;
             case UP:
                 if (OnFloatEvent == null) {
-                    Actions.doPullUp(mAccessibilityService);
+                    up();
                 } else {
                     OnFloatEvent.onUp();
                 }
@@ -221,6 +235,11 @@ public class FloatingBall extends View {
                         Thread.sleep(25);
                     } catch (Exception e) {
                         e.printStackTrace();
+                    }
+                    if (circleWidth == 1) {
+                        mVibrator.vibrate(new long[]{0, 100}, -1);
+                        mIsLongTouch = true;
+                        mode=MODE.MOVE;
                     }
                 }
             }
@@ -286,5 +305,35 @@ public class FloatingBall extends View {
         void onDown();
 
         void onClick();
+    }
+
+    private void up() {
+        mAccessibilityService.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
+    }
+
+    private void down() {
+        mAccessibilityService.performGlobalAction(AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS);
+    }
+
+    private void left() {
+        mAccessibilityService.performGlobalAction(AccessibilityService.GLOBAL_ACTION_RECENTS);
+    }
+
+    private void right() {
+        mAccessibilityService.performGlobalAction(AccessibilityService.GLOBAL_ACTION_RECENTS);
+    }
+
+    private void back() {
+        mAccessibilityService.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK);
+    }
+
+    public int dip2px(float dip) {
+        return (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, dip, getContext().getResources().getDisplayMetrics()
+        );
+    }
+
+    private void setAlpha(){
+        setAlpha(0.6f);
     }
 }

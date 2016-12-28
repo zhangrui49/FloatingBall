@@ -1,5 +1,6 @@
 package com.zhangrui.floatingball;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -28,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkAccessibility() {
         // 判断辅助功能是否开启
-        if (!Actions.isAccessibilitySettingsOn(this)) {
+        if (isAccessibilitySettingsOn(this)) {
             // 引导至辅助功能设置页面
             startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
             Toast.makeText(this, "请先开启悬浮窗辅助功能", Toast.LENGTH_SHORT).show();
@@ -41,5 +42,25 @@ public class MainActivity extends AppCompatActivity {
         data.putInt("action", FloatingBallService.ACTION_SHOW);
         intent.putExtras(data);
         startService(intent);
+    }
+
+    public static boolean isAccessibilitySettingsOn(Context context) {
+        int accessibilityEnabled = 0;
+        try {
+            accessibilityEnabled = Settings.Secure.getInt(context.getContentResolver(),
+                    android.provider.Settings.Secure.ACCESSIBILITY_ENABLED);
+        } catch (Settings.SettingNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        if (accessibilityEnabled == 1) {
+            String services = Settings.Secure.getString(context.getContentResolver(),
+                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+            if (services != null) {
+                return services.toLowerCase().contains(context.getPackageName().toLowerCase());
+            }
+        }
+
+        return false;
     }
 }
